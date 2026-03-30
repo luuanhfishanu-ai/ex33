@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>WebGIS</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+
+<style>
+#map { height: 100vh; }
+
+.legend {
+    background: white;
+    padding: 10px;
+    line-height: 18px;
+}
+
+.legend i {
+    width: 18px;
+    height: 18px;
+    float: left;
+    margin-right: 8px;
+}
+</style>
+</head>
+
+<body>
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+// Map
+var map = L.map('map').setView([21.03, 105.85], 11);
+
+// Basemap
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+// Hàm màu (đổi theo field của bạn)
+function getColor(d) {
+    return d > 4 ? '#800026' :
+           d > 3 ? '#BD0026' :
+           d > 2 ? '#E31A1C' :
+           d > 1 ? '#FC4E2A' :
+                   '#FD8D3C';
+}
+
+// Style
+function style(feature) {
+    return {
+        fillColor: getColor(feature.properties.level), // ⚠️ đổi "level"
+        weight: 1,
+        color: 'white',
+        fillOpacity: 0.7
+    };
+}
+
+// Load file có sẵn
+fetch('SlopeHN.geojson')  // 👉 tên file của bạn
+.then(res => res.json())
+.then(data => {
+    L.geoJson(data, {style: style}).addTo(map);
+});
+
+// Legend
+var legend = L.control({position: 'bottomright'});
+
+legend.onAdd = function () {
+    var div = L.DomUtil.create('div', 'legend'),
+        grades = [0,1,2,3,4];
+
+    for (var i = 0; i < grades.length; i++) {
+        div.innerHTML +=
+            '<i style="background:' + getColor(grades[i]+1) + '"></i> ' +
+            grades[i] + (grades[i+1] ? '–' + grades[i+1] + '<br>' : '+');
+    }
+    return div;
+};
+
+legend.addTo(map);
+
+</script>
+</body>
+</html>
