@@ -56,7 +56,7 @@ function getColor(d) {
 var slopeLayer;
 
 // Load GeoJSON
-fetch('slope.geojson')
+fetch('SlopeHN.geojson')
   .then(res => res.json())
   .then(data => {
 
@@ -87,7 +87,7 @@ fetch('slope.geojson')
     };
 
     var overlayMaps = {
-        "Slope": slopeLayer
+        "SlopeHN": slopeLayer
     };
 
     L.control.layers(baseMaps, overlayMaps).addTo(map);
