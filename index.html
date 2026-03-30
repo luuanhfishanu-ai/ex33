@@ -1,84 +1,120 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="utf-8" />
-<title>WebGIS</title>
+    <title>Slope Hanoi WebGIS (GeoJSON)</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 
-<style>
-#map { height: 100vh; }
+    <style>
+        #map { height: 100vh; }
 
-.legend {
-    background: white;
-    padding: 10px;
-    line-height: 18px;
-}
+        .legend {
+            background: white;
+            padding: 10px;
+            line-height: 1.5;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+        }
 
-.legend i {
-    width: 18px;
-    height: 18px;
-    float: left;
-    margin-right: 8px;
-}
-</style>
+        .legend i {
+            width: 18px;
+            height: 18px;
+            float: left;
+            margin-right: 8px;
+            opacity: 0.8;
+        }
+    </style>
 </head>
-
 <body>
+
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <script>
-// Map
-var map = L.map('map').setView([21.03, 105.85], 11);
+// ================= MAP =================
+var map = L.map('map').setView([21.03, 105.85], 10);
 
-// Basemap
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+// Base map
+var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+}).addTo(map);
 
-// Hàm màu (đổi theo field của bạn)
+// ================= COLOR FUNCTION =================
 function getColor(d) {
-    return d > 4 ? '#800026' :
-           d > 3 ? '#BD0026' :
-           d > 2 ? '#E31A1C' :
-           d > 1 ? '#FC4E2A' :
-                   '#FD8D3C';
+  return d > 28 ? 'green' :
+         d > 5  ? 'lightgreen' :
+         d > 2  ? 'yellow' :
+         d > 1  ? 'orange' :
+         d > 0  ? 'red' :
+                  'blue'; // water
 }
 
-// Style
-function style(feature) {
-    return {
-        fillColor: getColor(feature.properties.level), // ⚠️ đổi "level"
-        weight: 1,
-        color: 'white',
-        fillOpacity: 0.7
+// ================= SLOPE GEOJSON =================
+var slopeLayer;
+
+// Load GeoJSON
+fetch('slope.geojson')
+  .then(res => res.json())
+  .then(data => {
+
+    slopeLayer = L.geoJSON(data, {
+
+      style: function(feature) {
+        var value = feature.properties.DN; // đổi nếu field khác
+
+        return {
+          color: 'black',
+          weight: 0.3,
+          fillColor: getColor(value),
+          fillOpacity: 0.7
+        };
+      },
+
+      onEachFeature: function (feature, layer) {
+        layer.bindPopup("Slope: " + feature.properties.DN);
+      }
+
+    });
+
+    slopeLayer.addTo(map);
+
+    // Layer control
+    var baseMaps = {
+        "OpenStreetMap": osm
     };
-}
 
-// Load file có sẵn
-fetch('SlopeHN.geojson')  // 👉 tên file của bạn
-.then(res => res.json())
-.then(data => {
-    L.geoJson(data, {style: style}).addTo(map);
-});
+    var overlayMaps = {
+        "Slope": slopeLayer
+    };
 
-// Legend
+    L.control.layers(baseMaps, overlayMaps).addTo(map);
+
+  });
+
+// ================= LEGEND =================
 var legend = L.control({position: 'bottomright'});
 
-legend.onAdd = function () {
-    var div = L.DomUtil.create('div', 'legend'),
-        grades = [0,1,2,3,4];
+legend.onAdd = function (map) {
+    var div = L.DomUtil.create('div', 'legend');
 
-    for (var i = 0; i < grades.length; i++) {
-        div.innerHTML +=
-            '<i style="background:' + getColor(grades[i]+1) + '"></i> ' +
-            grades[i] + (grades[i+1] ? '–' + grades[i+1] + '<br>' : '+');
-    }
+    div.innerHTML += "<b>Slope (degree)</b><br>";
+
+    div.innerHTML += '<i style="background: blue"></i> Water<br>';
+    div.innerHTML += '<i style="background: red"></i> <1<br>';
+    div.innerHTML += '<i style="background: orange"></i> 1-2<br>';
+    div.innerHTML += '<i style="background: yellow"></i> 2-5<br>';
+    div.innerHTML += '<i style="background: lightgreen"></i> 5-28<br>';
+    div.innerHTML += '<i style="background: green"></i> >28<br>';
+
     return div;
 };
 
 legend.addTo(map);
 
 </script>
+
 </body>
 </html>
